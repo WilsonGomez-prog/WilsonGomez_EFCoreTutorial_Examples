@@ -23,8 +23,24 @@ namespace WilsonGomez_EFCoreTutorials_AP2_PT2.DAL
             //Properties Configurations.
             modelBuilder.Entity<Student>()
                     .Property(s => s.StudentId)
-                    .HasDefaultValue(0)
+                    .UseIdentityColumn()
                     .IsRequired();
+
+            modelBuilder.Entity<Grade>()
+                    .Property(g => g.Id)
+                    .UseIdentityColumn()
+                    .IsRequired();
+
+            modelBuilder.Entity<StudentAddress>()
+                    .Property(sa => sa.StudentAddressId)
+                    .UseIdentityColumn()
+                    .IsRequired();
+
+            modelBuilder.Entity<Course>()
+                    .Property(c => c.CourseId)
+                    .UseIdentityColumn()
+                    .IsRequired();
+
 
             modelBuilder.Entity<Student>()
                 .Property(s => s.GradeId)

@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using WilsonGomez_EFCoreTutorials_AP2_PT2.DAL;
 using WilsonGomez_EFCoreTutorials_AP2_PT2.Entidades;
+using Microsoft.EntityFrameworkCore;
+
 
 namespace WilsonGomez_EFCoreTutorials_AP2_PT2
 {
@@ -32,14 +34,14 @@ namespace WilsonGomez_EFCoreTutorials_AP2_PT2
 
             #region Querying Chapter
             var contexto = new SchoolContext();
-                        var studentsWithSameName = contexto.Students
-                                                          .Where(s => s.FirstName.Contains(GetName()))
-                                                          .ToList();
+            var studentsWithSameName = contexto.Students
+                                              .Where(s => s.FirstName.Contains(GetName()))
+                                              .ToList();
 
-                        foreach (Student student in studentsWithSameName)
-                        {
-                            Console.WriteLine("\t" + student.StudentId + " - " + student.FirstName);
-                        }
+            foreach (Student student in studentsWithSameName)
+            {
+                Console.WriteLine("\t" + student.StudentId + " - " + student.FirstName);
+            }
             #endregion
 
             #region Saving Data Chapter
@@ -49,7 +51,12 @@ namespace WilsonGomez_EFCoreTutorials_AP2_PT2
                 var std = new Student()
                 {
                     FirstName = "Bill",
-                    LastName = "Gates"
+                    LastName = "Gates",
+                    Grade = new Grade()
+                    {
+                        GradeName = "Programming Studio"
+                    }
+
                 };
 
                 context.Add<Student>(std);
@@ -72,16 +79,21 @@ namespace WilsonGomez_EFCoreTutorials_AP2_PT2
             {
                 var std = context.Students.First<Student>();
 
-                context.Remove <Student> (std);
+                context.Remove<Student>(std);
 
                 Console.WriteLine(context.SaveChanges() > 0 ? "Deleted" : "Couldn't delete");
             }
             #endregion
 
-            #region Disconnected Scenario: Insert Data
+            #region Disconnected Scenario: Insert Data            
             
             using (var context = new SchoolContext())
             {
+                Grade grade = new Grade()
+                {
+                    GradeName = "Grade Test"
+                };
+
                 var stdAddress = new StudentAddress()
                 {
                     City = "SFO",
@@ -93,7 +105,8 @@ namespace WilsonGomez_EFCoreTutorials_AP2_PT2
                 {
                     FirstName = "Steve",
                     LastName = "Jobs",
-                    Address = stdAddress
+                    Address = stdAddress,
+                    Grade = grade
                 };
 
                 context.Add<Student>(std);
@@ -104,10 +117,15 @@ namespace WilsonGomez_EFCoreTutorials_AP2_PT2
             //Insert multiples records of the same type
             using (var context = new SchoolContext())
             {
+                Grade grade = new Grade()
+                {
+                    GradeName = "Database Systems"
+                };
+
                 var StudentList = new List<Student>()
                 {
-                    new Student() { FirstName = "Jane", LastName = "Doe"},
-                    new Student() { FirstName = "John", LastName = "Doe"}
+                    new Student() { FirstName = "Jane", LastName = "Doe", Grade = grade},
+                    new Student() { FirstName = "John", LastName = "Doe", Grade = grade}
                 };
 
                 context.AddRange(StudentList);
@@ -117,10 +135,15 @@ namespace WilsonGomez_EFCoreTutorials_AP2_PT2
             //Insert multiples records of different type
             using (var context = new SchoolContext())
             {
+                Grade grade = new Grade()
+                {
+                    GradeName = "Law"
+                };
+
                 var EntitiesList = new List<Object>()
                 {
-                    new Student() { FirstName = "Mike", LastName = "Ross"},
-                    new StudentAddress() { City = "MAN", State = "NY", Country = "USA"},
+                    new Student() { FirstName = "Mike", LastName = "Ross", Grade = grade},
+                    new StudentAddress() { City = "MAN", State = "NY", Country = "USA", StudentId = 4},
                     new Course() { CourseName = "Ethics in Law"}
                 };
 
@@ -131,7 +154,7 @@ namespace WilsonGomez_EFCoreTutorials_AP2_PT2
             //Update a record of an entity
             using (var context = new SchoolContext())
             {
-                var stud = new Student() { StudentId = 2, FirstName = "Bill" };
+                var stud = context.Students.First();
 
                 stud.FirstName = "Steve";
 
@@ -145,9 +168,9 @@ namespace WilsonGomez_EFCoreTutorials_AP2_PT2
             {
                 IList<Student> modifiedStudents = new List<Student>()
                 {
-                    new Student() { StudentId = 3, FirstName = "Juan" },
-                    new Student() { StudentId = 4, LastName = "Juan" },
-                    new Student() { StudentId = 5, FirstName = "Lucas" },
+                    context.Students.Where(st => st.StudentId == 3).FirstOrDefault(),
+                    context.Students.Where(st => st.StudentId == 4).FirstOrDefault(),
+                    context.Students.Where(st => st.StudentId == 5).FirstOrDefault()
                 };
                 context.UpdateRange(modifiedStudents);
 
@@ -190,10 +213,16 @@ namespace WilsonGomez_EFCoreTutorials_AP2_PT2
             //EntityState.Added Demonstration
             using (var context = new SchoolContext())
             {
+                var grade = new Grade()
+                {
+                    GradeName = "Computer Science"
+                };
+
                 var student = new Student() 
                 { 
                     FirstName = "Juan", 
-                    LastName = "Perez" 
+                    LastName = "Perez",
+                    Grade = grade
                 };
 
                 context.Add<Student>(student);
@@ -233,7 +262,7 @@ namespace WilsonGomez_EFCoreTutorials_AP2_PT2
 
             using (var context = new SchoolContext())
             {
-                var std = new Student() { FirstName = "Bill" };
+                var std = new Student() { FirstName = "Bill", Grade = new Grade() { GradeName = "Medicine" } };
 
                 // Setting the shadow property value manually
                 context.Entry(std).Property("CreatedDate").CurrentValue = DateTime.Now;
@@ -242,6 +271,19 @@ namespace WilsonGomez_EFCoreTutorials_AP2_PT2
                 var createdDate = context.Entry(std).Property("CreatedDate").CurrentValue;
             }
 
+            #endregion
+
+            #region Working with Stored Procedures
+            using (var context = new SchoolContext())
+            {
+                string nameToSearch = "Juan";
+                var ListaStudiantes = context.Students.FromSqlInterpolated($"GetStudents '{nameToSearch}'");
+
+                foreach (Student student in ListaStudiantes)
+                {
+                    Console.WriteLine("\t" + student.StudentId + " - " + student.FirstName);
+                }
+            }
             #endregion
 
         }
